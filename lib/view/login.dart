@@ -1,43 +1,54 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutterapitut/Controllers/FlutterSession.dart';
 import 'package:flutterapitut/Controllers/databasehelper.dart';
 import 'package:flutterapitut/view/dashboard.dart';
 import 'package:flutterapitut/view/register.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-class LoginPage extends StatefulWidget{
-
-  LoginPage({Key key , this.title}) : super(key : key);
+class LoginPage extends StatefulWidget {
+  LoginPage({Key key, this.title}) : super(key: key);
   final String title;
 
   @override
-  LoginPageState  createState() => LoginPageState();
+  LoginPageState createState() => LoginPageState();
 }
 
 class LoginPageState extends State<LoginPage> {
-
-
-
   read() async {
     final prefs = await SharedPreferences.getInstance();
     final key = 'token';
-    final value = prefs.get(key ) ?? 0;
-    if(value != '0'){
-      Navigator.of(context).push(
-          new MaterialPageRoute(
-            builder: (BuildContext context) => new Dashboard(),
-          )
-      );
+    final value = prefs.get(key) ?? null;
+    if (value != null) {
+      Navigator.of(context).push(new MaterialPageRoute(
+        builder: (BuildContext context) => new Dashboard(),
+      ));
     }
   }
 
-@override
-initState(){
-  read();
-}
 
+  void navigateUser() async{
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var status = prefs.getBool('isLoggedIn') ?? false;
+    print(status);
+    if (status) {
+      Navigator.of(context).push(new MaterialPageRoute(
+        builder: (BuildContext context) => new Dashboard(),
+      ));
+    } else {
+      Navigator.of(context).push(new MaterialPageRoute(
+        builder: (BuildContext context) => new LoginPage(),
+      ));
+    }
+  }
 
-
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    //startTimer();
+  }
 
   DatabaseHelper databaseHelper = new DatabaseHelper();
   String msgStatus = '';
@@ -45,39 +56,41 @@ initState(){
   final TextEditingController _emailController = new TextEditingController();
   final TextEditingController _passwordController = new TextEditingController();
 
-
-  _onPressed(){
+  _onPressed() {
     setState(() {
-      if(_emailController.text.trim().toLowerCase().isNotEmpty &&
-          _passwordController.text.trim().isNotEmpty ){
-        databaseHelper.loginData(_emailController.text.trim().toLowerCase(),
-            _passwordController.text.trim()).whenComplete((){
-              if(databaseHelper.status){
-                _showDialog();
-                msgStatus = 'Check email or password';
-              }else{
-                 Navigator.pushReplacementNamed(context, '/dashboard');
-
-
-              }
+      if (_emailController.text.trim().toLowerCase().isNotEmpty &&
+          _passwordController.text.trim().isNotEmpty) {
+        databaseHelper
+            .loginData(_emailController.text.trim().toLowerCase(),
+                _passwordController.text.trim())
+            .whenComplete(() async {
+          if (databaseHelper.status) {
+            _showDialog();
+            msgStatus = 'Check email or password';
+          } else {
+            await FlutterSession().set('token',_emailController.text);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => Dashboard()),
+            );
+          }
         });
       }
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp(
       title: 'Login',
       home: Scaffold(
         appBar: AppBar(
-          title:  Text('Login'),
+          title: Text('Login'),
         ),
         body: Container(
           child: ListView(
-            padding: const EdgeInsets.only(top: 62,left: 12.0,right: 12.0,bottom: 12.0),
+            padding: const EdgeInsets.only(
+                top: 62, left: 12.0, right: 12.0, bottom: 12.0),
             children: <Widget>[
               Container(
                 height: 50,
@@ -91,7 +104,6 @@ initState(){
                   ),
                 ),
               ),
-
               Container(
                 height: 50,
                 child: new TextField(
@@ -104,8 +116,9 @@ initState(){
                   ),
                 ),
               ),
-              new Padding(padding: new EdgeInsets.only(top: 44.0),),
-
+              new Padding(
+                padding: new EdgeInsets.only(top: 44.0),
+              ),
               Container(
                 height: 50,
                 child: new RaisedButton(
@@ -114,38 +127,39 @@ initState(){
                   child: new Text(
                     'Login',
                     style: new TextStyle(
-                        color: Colors.white,
-                        backgroundColor: Colors.blue),),
+                        color: Colors.white, backgroundColor: Colors.blue),
+                  ),
                 ),
               ),
-              new Padding(padding: new EdgeInsets.only(top: 44.0),),
-
+              new Padding(
+                padding: new EdgeInsets.only(top: 44.0),
+              ),
               Container(
                 height: 50,
                 child: new Text(
-                   '$msgStatus',
-                   textAlign: TextAlign.center,
+                  '$msgStatus',
+                  textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-              new Padding(padding: new EdgeInsets.only(top: 44.0),),
+              new Padding(
+                padding: new EdgeInsets.only(top: 44.0),
+              ),
               Container(
                 height: 50,
                 child: new FlatButton(
-                  onPressed: ()=>Navigator.of(context).push(
-                    new MaterialPageRoute(
-                      builder: (BuildContext context) => new RegisterPage(),
-                    )
-                  )
-
-                  ,
+                  onPressed: () =>
+                      Navigator.of(context).push(new MaterialPageRoute(
+                    builder: (BuildContext context) => new RegisterPage(),
+                  )),
                   color: Colors.blue,
                   child: new Text(
                     'Register',
                     style: new TextStyle(
-                        color: Colors.white,
-                         ),),
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -155,48 +169,24 @@ initState(){
     );
   }
 
-
-
-  void _showDialog(){
+  void _showDialog() {
     showDialog(
-      context:context ,
-      builder:(BuildContext context){
-        return AlertDialog(
-          title: new Text('Failed'),
-          content:  new Text('Check your email or password'),
-          actions: <Widget>[
-            new RaisedButton(
-
-              child: new Text(
-                'Close',
-                 ),
-
-              onPressed: (){
-                Navigator.of(context).pop();
-              },
-
-            ),
-          ],
-        );
-      }
-    );
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: new Text('Failed'),
+            content: new Text('Check your email or password'),
+            actions: <Widget>[
+              new RaisedButton(
+                child: new Text(
+                  'Close',
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
   }
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
